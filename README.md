@@ -1,10 +1,11 @@
 EasyConfig
 ==========
 
-A wrapper class for python's ConfigParser class that represent the config items as objects.
+A wrapper class for [python's ConfigParser class](http://docs.python.org/2.7/library/configparser.html) that represent the config items as objects.
 
-Usage:
+## Usage:
 
+### Accesing configuration items:
 Given the following config file:
 ```ini
 [SomeSection]
@@ -38,4 +39,25 @@ conf.SomeSection.some_list[0] == 1
 conf.SomeSection.some_list.append(4)
 # Will print [1, 2, 3, 4]
 print conf.SomeSection.some_list
+```
+
+### Adding new configuration items:
+
+Adding Option to the config is performed as followed:
+
+```python
+conf.SomeSection += EasyConfig.Option("new_list_option", [1, 2, 3])
+# Evaluates to True.
+conf.SomeSection.new_list_option == [1, 2, 3]
+
+# Another method
+conf.SomeSection.add_option("new_list_option", [1, 2, 3])
+```
+
+Adding Section is done the same way:
+
+```python
+conf += EasyConfig.Section("new_section")
+# Another method
+conf.add_section("new_section")
 ```

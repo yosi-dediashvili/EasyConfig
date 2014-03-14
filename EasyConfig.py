@@ -37,7 +37,7 @@ class EasyConfig(object):
     class Section(object):
         """ A section inside the configuration. """
 
-        def __init__(self, section_name, options):
+        def __init__(self, section_name, options = []):
             self.section_name = section_name
             for option in options:
                 setattr(self, option.name, option)
@@ -72,6 +72,20 @@ class EasyConfig(object):
             else:
                 option.value = value
             
+        def __iadd__(self, option):
+            """
+                If option is of type EasyConfig.Option, adds the option to the 
+                section (if it's not already present). Otherwise, the operator 
+                does nothing.
+            """
+            pass
+
+        def add_option(self, option_name, option_value):
+            """
+                Adds a new option with the given option and value. 
+            """
+            pass
+
         def __str__(self):
             return self.section_name
 
@@ -196,6 +210,21 @@ class EasyConfig(object):
             if isinstance(section, EasyConfig.Section):
                 yield section  
 
+    def __iadd__(self, section):
+        """
+            If section is of type EasyConfig.Section, adds the section to the 
+            config (if it's not already present). Otherwise, the operator does
+            nothing.
+        """
+        pass
+
+    def add_section(self, section_name):
+        """
+            Adds a new section with the given section_name to the config. If 
+            such section already exists, the call is ignored.
+        """
+        pass
+
     def save(self, config = None):
         """
             Will pass the configuration to the ConfigParser module, and save 
@@ -221,3 +250,13 @@ class EasyConfig(object):
             config = open(config, "w")
 
         self.parser.write(config)
+
+    def upgrade(self, other_easy_config):
+        """
+            Adds all the values from the other config to the current config. If
+            the other config contains options that are already present in the 
+            current config, the new options are ignored.
+
+
+        """
+        pass
