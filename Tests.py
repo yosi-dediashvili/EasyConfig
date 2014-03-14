@@ -1,10 +1,12 @@
 CONFIG_0_BEFORE = """
 [ListSection]
 list_item = [1, 2, 3]
+empty_list = []
 """.strip()
 CONFIG_0_AFTER = """
 [ListSection]
 list_item = [1, 2, 3, 4]
+empty_list = [1]
 """.strip()
 
 CONFIG_1_BEFORE = """
@@ -24,6 +26,7 @@ from StringIO import StringIO
 conf = EasyConfig(StringIO(CONFIG_0_BEFORE))
 assert(type(conf.ListSection.list_item))
 conf.ListSection.list_item.append(4)
+conf.ListSection.empty_list.append(1)
 new = StringIO()
 conf.save(new)
 
