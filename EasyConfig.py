@@ -38,9 +38,9 @@ class EasyConfig(object):
         """ A section inside the configuration. """
 
         def __init__(self, section_name, options = []):
-            self.section_name = section_name
+            self.name = section_name
             for option in options:
-                setattr(self, option.name, option)
+                self._add_option(option)
             
         def __iter__(self):
             """ Iterate over all the Options under the section. """
@@ -78,16 +78,29 @@ class EasyConfig(object):
                 section (if it's not already present). Otherwise, the operator 
                 does nothing.
             """
-            pass
+            if isinstance(option, EasyConfig.Option):
+                self._add_option(option)
+            return self
 
         def add_option(self, option_name, option_value):
             """
-                Adds a new option with the given option and value. 
+                Adds a new option with the given option and value, and return 
+                True. If option with that name already exists, the function 
+                ignores the call, and returns False.
             """
-            pass
+            return self._add_option(
+                EasyConfig.Option(option_name, option_value))
+            
+        def _add_option(self, option):
+            """ Unified logic for adding Option to the section. """
+            if not self.__dict__.has_key(option.name):
+                setattr(self, option.name, option)
+                return True
+            else:
+                return False
 
         def __str__(self):
-            return self.section_name
+            return self.name
 
     class Option(object):
         """ 
@@ -106,8 +119,14 @@ class EasyConfig(object):
         OPTION_TYPES = [int, float, bool, list, str]
 
         def __init__(self, name, value):
+            """
+                Init an Option instance with the given option name, and value. 
+                The name should be a string, and value can be either a string
+                representation of the supported type, or the type itself. 
+            """
             self.name = name
             self.option_type = None
+            # Pass the value as string.
             self._set_value(value)
 
         def __str__(self):
@@ -119,9 +138,6 @@ class EasyConfig(object):
                 object.__setattr__(self, name, value)
             else:
                 self._set_value(value)
-
-        def __getattribute__(self, name):
-            return object.__getattribute__(self, name)
 
         @property
         def value_str(self):
@@ -139,6 +155,7 @@ class EasyConfig(object):
                 otherwise, the function will only try to convert value to the
                 current option_type.
             """
+            value = str(value)
             def _try_convert(to_type, value):
                 try:
                     if to_type == list:
@@ -159,12 +176,12 @@ class EasyConfig(object):
             # If we haven't already set the the type of the option, resolve it.
             if self.option_type is None:
                 for op_type in self.OPTION_TYPES:
-                    converted_value = _try_convert(op_type, value)
-                    if converted_value is None:
+                    v = _try_convert(op_type, value)
+                    if v is None:
                         # Try the next one.
                         continue
                     else:
-                        object.__setattr__(self, "value", converted_value)
+                        object.__setattr__(self, "value", v)
                         self.option_type = op_type
                         break
 
@@ -201,8 +218,7 @@ class EasyConfig(object):
         for section in self.parser.sections():
             options = self.parser.items(section)
             options = map(lambda op: EasyConfig.Option(*op), options)
-            # Push the Section object.
-            setattr(self, section, EasyConfig.Section(section, options))
+            self.add_section(EasyConfig.Section(section, options))
     
     def __iter__(self):
         """ Iterate over all the section in the configuration. """
@@ -216,14 +232,31 @@ class EasyConfig(object):
             config (if it's not already present). Otherwise, the operator does
             nothing.
         """
-        pass
+        self.add_section(section)
+        return self
 
-    def add_section(self, section_name):
+    def add_section(self, section):
         """
-            Adds a new section with the given section_name to the config. If 
-            such section already exists, the call is ignored.
+            Adds a new section to the config. If section is str, it's converted
+            to Section object. If section is Section, it's left untouched. 
+
+            If a section with the same name does not already exists in the 
+            config, it's added, and the function returns True. If such section 
+            already exists, the call is ignored, and the function return False.
         """
-        pass
+        if isinstance(section, EasyConfig.Section):
+            section_name = section.name
+        elif isinstance(section, str):
+            section_name = section
+            section = EasyConfig.Section(section)
+        else:
+            raise TypeError("section should be either str or Section")
+
+        if not self.__dict__.has_key(section_name):
+            setattr(self, section_name, section)
+            return True
+        else:            
+            return False
 
     def save(self, config = None):
         """
@@ -237,10 +270,6 @@ class EasyConfig(object):
             that file. If config is a file-like object, it will be written to 
             it.
         """
-        for section in self:
-            for option in section:
-                self.parser.set(str(section), str(option), option.value_str)
-
         if not config:
             if not self.config_path:
                 raise RuntimeError(
@@ -249,14 +278,30 @@ class EasyConfig(object):
         elif isinstance(config, basestring):
             config = open(config, "w")
 
+        self.update_parser()
         self.parser.write(config)
+
+    def update_parser(self):
+        """
+            Updates the state of the internal ConfigParser.
+        """
+        for section in self:
+            if not self.parser.has_section(str(section)):
+                self.parser.add_section(str(section))
+            for option in section:
+                self.parser.set(str(section), str(option), option.value_str)
 
     def upgrade(self, other_easy_config):
         """
             Adds all the values from the other config to the current config. If
             the other config contains options that are already present in the 
             current config, the new options are ignored.
-
-
         """
-        pass
+        for other_section in other_easy_config:
+            # False means that such section name already exists.
+            if not self.add_section(other_section):
+                for other_option in other_section:
+                    section = getattr(self, other_section.name)
+                    section += other_option
+
+
