@@ -5,8 +5,11 @@ from StringIO import StringIO
 import unittest
 
 from EasyConfig import EasyConfig
-Option = EasyConfig.Option
-Section = EasyConfig.Section
+EasyConfig = EasyConfig.EasyConfig
+from EasyConfig import Option
+Option = Option.Option
+from EasyConfig import Section
+Section = Section.Section
 
 InitConfig = """
 [InitSection]
