@@ -44,7 +44,7 @@ class EasyConfig(object):
 
         if isinstance(config, basestring):
             self.config_path = config
-            parser = open(self.config_path, "r")
+            config = open(self.config_path, "r")
         else:
             self.config_path = None
 
